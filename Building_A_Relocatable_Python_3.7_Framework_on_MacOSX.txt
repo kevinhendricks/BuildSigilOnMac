@@ -63,8 +63,8 @@ sudo make install
 #     https://www.tcl.tk/software/tcltk/download.html
 #     https://www.tcl.tk/doc/howto/compile.html  (use --enable-framework --enable-aqua --enable-threads during configure)
 
-#     And finally as we will be building a required PyQt5 python module, you will need to have built or
-#     downloaded prebuilt versions of Qt 5.12.3 first
+#     And finally as we will be building a required PyQt5 python module, you will need to have built
+#     Qt 5.12.6 version of Qt first.
 #       So see Building_Qt5_From_Source_with_QtWebkit_Added_Back_on_MacOSX.txt
 
 
@@ -110,26 +110,35 @@ sudo pip3 install html5lib
 sudo pip3 install lxml
 sudo pip3 install Pillow
 sudo pip3 install regex
-sudo pip3 install cssutils
+sudo pip3 install css-parser
 sudo pip3 install cssselect
 sudo pip3 install chardet
+sudo pip3 install certifi
 
-# Note: and for the upcoming release you will want to replace
-    sudo pip3 install cssutils
-with
-    sudo pip3 install css-parser
 
-which is a drop in replacement for cssutils with many bugs fixed.
+To match what is used by Sigil 1.0 you should have the following
+versions:
 
-# For Python 3.6 or later on newer macOS systems, there seems
-# to be missing OpenSSL certificates that can cause problems.
-# To fix this issue an extra module must be installed and run
-# to install the certificates.  This can be done by running the
-# following python3 program to install the "certifi" module
-# and use its certificates for python3 
+Package      Version  
+------------ ---------
+certifi      2019.6.16
+chardet      3.0.4    
+css-parser   1.0.4    
+cssselect    1.0.3    
+cssutils     1.0.2    
+html5lib     1.0.1    
+lxml         4.4.2    
+Pillow       6.2.1    
+pip          19.3.1   
+regex        2019.11.1
+setuptools   40.6.2   
+six          1.13.0   
+webencodings 0.5.1    
 
-sudo ./python3 install_certifi.py
- 
+Note: we have replaced cssutils with a drop in replacement with many bugs fixed
+called css-parser.
+
+
 # Now a complete Python.framework has been built in ${MYDEST}
 # But we still need to make it a relocatable framework
 
@@ -173,13 +182,14 @@ sudo install_name_tool -add_rpath @executable_path/../../../../ ./Python
 # We will now use this just-built Python3.7 interpreter to install PyQt5 and sip.
 
 # **** Important: versions of PyQt5 and sip must be selected to match with the Qt version
-# **** In these instructions we are using Qt 5.12.3 and therefore need sip-4.19.17 and PyQt5_gpl-5.12.2
+# **** In these instructions we are using Qt 5.12.6 and therefore need:
+# **** sip-4.19.18 and PyQt5_gpl-5.12.3
 
 
-# Building sip-4.19.17 from source and installing it into your Python Interpreter
+# Building sip-4.19.18 from source and installing it into your Python Interpreter
 
-# From https://sourceforge.net/projects/pyqt/files/sip/
-# Download sip-4.19.17.tar.gz
+# From https://www.riverbankcomputing.com/software/pyqt/download5
+# Download sip-4.19.18.tar.gz
 
 # More detailed build instructions can be found here:
 #    http://pyqt.sourceforge.net/Docs/sip4/installation.html
@@ -188,17 +198,17 @@ sudo install_name_tool -add_rpath @executable_path/../../../../ ./Python
 export PATH=${MYDEST}/Python.framework/Versions/3.7/bin:${PATH}
 which python3
 
-tar -zxvf sip-4.19.17.tar.gz
-cd sip-4.19.17
+tar -zxvf sip-4.19.18.tar.gz
+cd sip-4.19.18
 python3 ./configure.py --deployment-target=10.12 --sip-module=PyQt5.sip
 make
 sudo make install
 
 
-# Building PyQt5 for Qt-5.12.3 from source and installing it into your Python Interpreter
+# Building PyQt5 for Qt-5.12.6 from source and installing it into your Python Interpreter
 
-# From https://sourceforge.net/projects/pyqt/files/PyQt5/
-# Download PyQt5_gpl-5.12.2.tar.gz
+# From https://www.riverbankcomputing.com/software/pyqt/download5
+# Download PyQt5_gpl-5.12.3.tar.gz
 
 # More detailed build instructions can be found here: 
 #    http://pyqt.sourceforge.net/Docs/PyQt5/installation.html#building-and-installing-from-source
@@ -207,19 +217,27 @@ sudo make install
 export PATH=${MYDEST}/Python.framework/Versions/3.7/bin:${PATH}
 which python3
 
-# Must have the Qt5.12.3 bin directory in the path to specify which Qt to use
+# Must have the Qt5.12.6 bin directory in the path to specify which Qt to use
 # See Building_Qt5_From_Source_with_QtWebkit_Added_Back_on_MacOSX.txt
-export PATH=/Users/${USER}/Qt512/bin:${PATH}
+export PATH=/Users/${USER}/Qt5126/bin:${PATH}
 which qmake
 
 export MACOSX_DEPLOYMENT_TARGET=10.12
 
-tar -zxvf PyQt5_gpl-5.12.2.tar.gz
-cd PyQt5_gpl-5.12.2
+tar -zxvf PyQt5_gpl-5.12.3.tar.gz
+cd PyQt5_gpl-5.12.3
 python3 ./configure.py --confirm-license --no-docstrings --no-stubs 
 make -j4
 sudo make install
 
+
+To match what is used by Sigil 1.0 you should now have the following
+versions:
+
+Package      Version  
+------------ ---------
+PyQt5        5.12.3   
+PyQt5-sip    4.19.18  
 
 # Once complete you will have properly built a Python 3.7 interpreter to be embedded inside
 # of Sigil
