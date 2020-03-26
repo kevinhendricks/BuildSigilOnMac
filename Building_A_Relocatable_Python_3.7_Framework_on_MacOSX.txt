@@ -7,8 +7,15 @@
 #
 #
 #     For Python's pip3 and lzma module you will need to compile and install the headers 
-#     and static library versions of liblzma.a (xz), libssl.a (libopenssl), and libcrypto.a (libopenssl)
+#     and static library vercd ..sions of liblzma.a (xz), libssl.a (libopenssl), and libcrypto.a (libopenssl)
 #
+
+If you are using XCode 10.X on MacOSX 10.14.X, remember to install the command line tools 
+and their headers!  The headers are now not installed by default.  An installer package
+for the headers can be found here:
+
+/Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg
+
 
 # Download openssl-1.1.c.tar.gz or later from https://www.openssl.org/source
 
@@ -63,8 +70,8 @@ sudo make install
 #     https://www.tcl.tk/software/tcltk/download.html
 #     https://www.tcl.tk/doc/howto/compile.html  (use --enable-framework --enable-aqua --enable-threads during configure)
 
-#     And finally as we will be building a required PyQt5 python module, you will need to have built
-#     Qt 5.12.6 version of Qt first.
+#     And finally as we will be building a required PyQt5 python module, you will need to have built or
+#     downloaded prebuilt versions of Qt 5.12.6 first
 #       So see Building_Qt5_From_Source_with_QtWebkit_Added_Back_on_MacOSX.txt
 
 
@@ -114,26 +121,8 @@ sudo pip3 install css-parser
 sudo pip3 install cssselect
 sudo pip3 install chardet
 sudo pip3 install certifi
-
-
-To match what is used by Sigil 1.0 you should have the following
-versions:
-
-Package      Version  
------------- ---------
-certifi      2019.6.16
-chardet      3.0.4    
-css-parser   1.0.4    
-cssselect    1.0.3    
-cssutils     1.0.2    
-html5lib     1.0.1    
-lxml         4.4.2    
-Pillow       6.2.1    
-pip          19.3.1   
-regex        2019.11.1
-setuptools   40.6.2   
-six          1.13.0   
-webencodings 0.5.1    
+sudo pip3 install dulwich
+sudo pip3 install urllib3
 
 Note: we have replaced cssutils with a drop in replacement with many bugs fixed
 called css-parser.
@@ -219,7 +208,7 @@ which python3
 
 # Must have the Qt5.12.6 bin directory in the path to specify which Qt to use
 # See Building_Qt5_From_Source_with_QtWebkit_Added_Back_on_MacOSX.txt
-export PATH=/Users/${USER}/Qt5126/bin:${PATH}
+export PATH=/Users/${USER}/Qt512/bin:${PATH}
 which qmake
 
 export MACOSX_DEPLOYMENT_TARGET=10.12
@@ -230,14 +219,6 @@ python3 ./configure.py --confirm-license --no-docstrings --no-stubs
 make -j4
 sudo make install
 
-
-To match what is used by Sigil 1.0 you should now have the following
-versions:
-
-Package      Version  
------------- ---------
-PyQt5        5.12.3   
-PyQt5-sip    4.19.18  
 
 # Once complete you will have properly built a Python 3.7 interpreter to be embedded inside
 # of Sigil
