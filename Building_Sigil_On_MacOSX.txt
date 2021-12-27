@@ -12,7 +12,7 @@
 export MACOSX_DEPLOYMENT_TARGET=10.12
 
 # Set the location of where the relocatable Python framework was installed
-# See "Building_A_Relocatable_Python_3.8_Framework_on_MacOSX.txt
+# See "Building_A_Relocatable_Python_3.9_Framework_on_MacOSX.txt
 
 # Remember to stay away from /tmp locations as Mac OSX has a daemon that will delete 
 # files in tmp older than 3 days right out from underneath the user
@@ -34,7 +34,7 @@ export PATH=${PATH}:${MYQTHOME}/bin
 # Make sure the newly created relocatable python framework is found first
 # **before** any system version of Python3
 
-export PATH=${MYDEST}/Python.framework/Versions/3.8/bin:${PATH}
+export PATH=${MYDEST}/Python.framework/Versions/3.9/bin:${PATH}
 
 mkdir build
 cd build
