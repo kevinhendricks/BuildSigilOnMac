@@ -1,0 +1,161 @@
+From 4fd5942b4fa4bc1aa6b5493279b3bce6e95dc871 Mon Sep 17 00:00:00 2001
+From: Axel Spoerl <axel.spoerl@qt.io>
+Date: Wed, 06 Sep 2023 15:42:39 +0200
+Subject: [PATCH] QDialogButtonBox: Restore hidden standard buttons
+
+0b421fa58b9a73d657bf17834788fd1175c4767e ensured a correct focus chain,
+when buttons in a QDialogButtonBox were hidden. The implementation
+removed hidden buttons from the button box and re-added them, when
+shown again.
+
+The implementation did not check, if a hidden button was added via
+setStandardButtons(). In consequence, it was not added to the hash of
+standard buttons, its QDialogButtonBox::StandardButton property got
+and button(QDialogButtonBox::StandardButton) would return nullptr, even
+if the button was shown again.
+
+=> Keep hidden standard buttons in standardButtonHash.
+=> Write an autotest.
+
+Task-number: QTBUG-114377
+Pick-to: 6.6 6.5
+Change-Id: Ib28625d44fa89c3d06f181f64875c2e456cebbfa
+---
+
+diff --git a/src/widgets/widgets/qdialogbuttonbox.cpp b/src/widgets/widgets/qdialogbuttonbox.cpp
+index 69fea04..c35f8c8 100644
+--- a/src/widgets/widgets/qdialogbuttonbox.cpp
++++ b/src/widgets/widgets/qdialogbuttonbox.cpp
+@@ -704,32 +704,43 @@
+ void QDialogButtonBox::removeButton(QAbstractButton *button)
+ {
+     Q_D(QDialogButtonBox);
+-    d->removeButton(button, QDialogButtonBoxPrivate::RemoveRule::Disconnect);
++    d->removeButton(button, QDialogButtonBoxPrivate::RemoveReason::ManualRemove);
+ }
+ 
+-void QDialogButtonBoxPrivate::removeButton(QAbstractButton *button, RemoveRule rule)
++/*!
++   \internal
++   Removes \param button.
++   \param reason determines the behavior following the removal:
++   \list
++   \li \c ManualRemove disconnects all signals and removes the button from standardButtonHash.
++   \li \c HideEvent keeps connections alive, standard buttons remain in standardButtonHash.
++   \li \c Destroyed removes the button from standardButtonHash. Signals remain untouched, because
++          the button might already be only a QObject, the destructor of which handles disconnecting.
++   \endlist
++ */
++void QDialogButtonBoxPrivate::removeButton(QAbstractButton *button, RemoveReason reason)
+ {
+     if (!button)
+         return;
+ 
+-    // Remove it from hidden buttons
++    // Remove button from hidden buttons and roles
+     hiddenButtons.remove(button);
+-
+-    // Remove it from the standard button hash first and then from the roles
+-    standardButtonHash.remove(reinterpret_cast<QPushButton *>(button));
+     for (int i = 0; i < QDialogButtonBox::NRoles; ++i)
+         buttonLists[i].removeOne(button);
+ 
+-    switch (rule) {
+-    case RemoveRule::Disconnect:
++    switch (reason) {
++    case RemoveReason::ManualRemove:
+         button->setParent(nullptr);
+         QObjectPrivate::disconnect(button, &QAbstractButton::clicked,
+                                    this, &QDialogButtonBoxPrivate::handleButtonClicked);
+         QObjectPrivate::disconnect(button, &QAbstractButton::destroyed,
+                                    this, &QDialogButtonBoxPrivate::handleButtonDestroyed);
+         button->removeEventFilter(filter.get());
++        Q_FALLTHROUGH();
++    case RemoveReason::Destroyed:
++        standardButtonHash.remove(reinterpret_cast<QPushButton *>(button));
+         break;
+-    case RemoveRule::KeepConnections:
++    case RemoveReason::HideEvent:
+         break;
+     }
+ }
+@@ -881,7 +892,7 @@
+ {
+     Q_Q(QDialogButtonBox);
+     if (QObject *object = q->sender())
+-        removeButton(reinterpret_cast<QAbstractButton *>(object), RemoveRule::KeepConnections);
++        removeButton(reinterpret_cast<QAbstractButton *>(object), RemoveReason::Destroyed);
+ }
+ 
+ bool QDialogButtonBoxPrivate::handleButtonShowAndHide(QAbstractButton *button, QEvent *event)
+@@ -897,7 +908,7 @@
+     case QEvent::HideToParent: {
+         const QDialogButtonBox::ButtonRole role = q->buttonRole(button);
+         if (role != QDialogButtonBox::ButtonRole::InvalidRole) {
+-            removeButton(button, RemoveRule::KeepConnections);
++            removeButton(button, RemoveReason::HideEvent);
+             hiddenButtons.insert(button, role);
+             layoutButtons();
+         }
+diff --git a/src/widgets/widgets/qdialogbuttonbox_p.h b/src/widgets/widgets/qdialogbuttonbox_p.h
+index 1aa6071..c3d7e03 100644
+--- a/src/widgets/widgets/qdialogbuttonbox_p.h
++++ b/src/widgets/widgets/qdialogbuttonbox_p.h
+@@ -25,9 +25,10 @@
+     Q_DECLARE_PUBLIC(QDialogButtonBox)
+ 
+ public:
+-    enum class RemoveRule {
+-        KeepConnections,
+-        Disconnect,
++    enum class RemoveReason {
++        HideEvent,
++        ManualRemove,
++        Destroyed,
+     };
+     enum class LayoutRule {
+         DoLayout,
+@@ -53,7 +54,7 @@
+ 
+     void createStandardButtons(QDialogButtonBox::StandardButtons buttons);
+ 
+-    void removeButton(QAbstractButton *button, RemoveRule rule);
++    void removeButton(QAbstractButton *button, RemoveReason reason);
+     void layoutButtons();
+     void initLayout();
+     void resetLayout();
+diff --git a/tests/auto/widgets/widgets/qdialogbuttonbox/tst_qdialogbuttonbox.cpp b/tests/auto/widgets/widgets/qdialogbuttonbox/tst_qdialogbuttonbox.cpp
+index b3f26e5..3f5ffa6 100644
+--- a/tests/auto/widgets/widgets/qdialogbuttonbox/tst_qdialogbuttonbox.cpp
++++ b/tests/auto/widgets/widgets/qdialogbuttonbox/tst_qdialogbuttonbox.cpp
+@@ -55,6 +55,7 @@
+ #ifdef QT_BUILD_INTERNAL
+     void hideAndShowButton();
+ #endif
++    void hideAndShowStandardButton();
+     void buttonRole_data();
+     void buttonRole();
+     void setStandardButtons_data();
+@@ -426,6 +427,22 @@
+ }
+ #endif
+ 
++void tst_QDialogButtonBox::hideAndShowStandardButton()
++{
++    QDialogButtonBox buttonBox;
++    buttonBox.setStandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
++    buttonBox.show();
++    QVERIFY(QTest::qWaitForWindowExposed(&buttonBox));
++    auto *button = buttonBox.button(QDialogButtonBox::Cancel);
++    QVERIFY(button);
++    button->hide();
++    QVERIFY(QTest::qWaitFor([button](){ return !button->isVisible(); }));
++    QCOMPARE(button, buttonBox.button(QDialogButtonBox::Cancel));
++    button->show();
++    QVERIFY(QTest::qWaitForWindowExposed(button));
++    QCOMPARE(button, buttonBox.button(QDialogButtonBox::Cancel));
++}
++
+ void tst_QDialogButtonBox::testDelete()
+ {
+     QDialogButtonBox buttonBox;

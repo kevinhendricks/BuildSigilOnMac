@@ -1,0 +1,44 @@
+Patches to apply
+
+General patches for all platforms
+---------------------------------
+
+cd qt-everywhere-src-6.5.2
+patch -p0 < ../sources/qt650_fix_h6_insertParagraph.patch
+
+cd qtbase
+patch -p1 < ../../sources/CVE-2023-38197-qtbase-6.5.diff
+patch -p1 < ../../sources/qt652_fix_qlistview_accessibility.patch
+patch -p1 < ../../sources/qt652_qfontcombobox_accessibility.patch
+patch -p1 < ../../sources/qt652_harden_qmenu.patch
+patch -p1 < ../../sources/qt652_qcombobox_crash_fix.patch
+patch -p1 < ../../sources/qt652_qaccessible_crash_fix.patch
+patch -p1 < ../../sources/qt652_cleanup_native_dialogs_properly.patch
+
+# **NOTE** these next 4 must be applied in this order
+patch -p1 < ../../sources/qt652_buttonbox1_code_cleanup.patch
+patch -p1 < ../../sources/qt652_buttonbox2_update_focus.patch
+patch -p1 < ../../sources/qt652_buttonbox3_separate_event_filter.patch
+patch -p1 < ../../sources/qt652_buttonbox4_restore_hidden_buttons.patch
+
+cd ..
+
+
+macOs specific patches
+----------------------
+
+patch -p0 < ../sources/qt650_fix_missing_macos_menubar.patch
+cd qtbase
+patch -p1 < ../../sources/qt652_mac_printsupport_crash_fix.patch
+patch -p1 < ../../sources/qt652_mac_use_nonnative_alerts_for_richtext.patch
+cd ..
+
+# The following patch must be applied post install as it is on a generated cmake file
+cd /Users/${USER}/Qt652
+patch -p0 < sources/qt650_post_install_macos_ignore_bad_cups_cmake_find_failure.patch
+
+
+Windows specific patches
+-------------------------
+qt652_windows_identical_dual_monitor_edid_fix.patch
+

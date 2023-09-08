@@ -1,0 +1,71 @@
+From 904fb36004bbf52ff279be2aa8a6fb8c31d06bf6 Mon Sep 17 00:00:00 2001
+From: Volker Hilsheimer <volker.hilsheimer@qt.io>
+Date: Wed, 30 Aug 2023 16:45:58 +0200
+Subject: [PATCH] QPrintDialog on macOS: Don't crash when parent is not a window
+
+The test case is an incomplete version of the test that will be added to
+verify the fix for the referenced bug report. The test crashes already
+when showing the dialog without this fix.
+
+Task-number: QTBUG-116277
+Pick-to: 6.6 6.5 6.2
+Change-Id: I969a723157f6453b78bafae5cb24a6b37b1eea50
+---
+
+diff --git a/src/printsupport/dialogs/qprintdialog_mac.mm b/src/printsupport/dialogs/qprintdialog_mac.mm
+index b1b56db..fa4fac1 100644
+--- a/src/printsupport/dialogs/qprintdialog_mac.mm
++++ b/src/printsupport/dialogs/qprintdialog_mac.mm
+@@ -238,8 +238,8 @@
+         int rval = [printPanel runModalWithPrintInfo:printInfo];
+         [delegate printPanelDidEnd:printPanel returnCode:rval contextInfo:q];
+     } else {
+-        Q_ASSERT(q->parentWidget());
+-        QWindow *parentWindow = q->parentWidget()->windowHandle();
++        Q_ASSERT(q->window());
++        QWindow *parentWindow = q->window()->windowHandle();
+         NSWindow *window = static_cast<NSWindow *>(qApp->platformNativeInterface()->nativeResourceForWindow("nswindow", parentWindow));
+         [printPanel beginSheetWithPrintInfo:printInfo
+                              modalForWindow:window
+@@ -271,6 +271,7 @@
+ 
+ QPrintDialog::~QPrintDialog()
+ {
++    hide();
+ }
+ 
+ int QPrintDialog::exec()
+diff --git a/tests/auto/printsupport/dialogs/qabstractprintdialog/tst_qabstractprintdialog.cpp b/tests/auto/printsupport/dialogs/qabstractprintdialog/tst_qabstractprintdialog.cpp
+index 8dcfab8..377226d 100644
+--- a/tests/auto/printsupport/dialogs/qabstractprintdialog/tst_qabstractprintdialog.cpp
++++ b/tests/auto/printsupport/dialogs/qabstractprintdialog/tst_qabstractprintdialog.cpp
+@@ -24,6 +24,8 @@
+     void getSetCheck();
+     void setMinMax();
+     void setFromTo();
++
++    void hideNativeByDestruction();
+ #endif
+ };
+ 
+@@ -135,6 +137,20 @@
+     QCOMPARE(obj1.maxPage(), 50);
+ }
+ 
++void tst_QAbstractPrintDialog::hideNativeByDestruction()
++{
++#ifdef Q_OS_WINDOWS
++    QSKIP("This test fails on windows, the QPrintDialog::setVisible implementation blocks");
++#endif
++
++    QWidget window;
++    QWidget *child = new QWidget(&window);
++    QPointer<QPrintDialog> dialog = new QPrintDialog(child);
++    window.show();
++    QVERIFY(QTest::qWaitForWindowActive(&window));
++    dialog->open();
++}
++
+ #endif
+ 
+ QTEST_MAIN(tst_QAbstractPrintDialog)

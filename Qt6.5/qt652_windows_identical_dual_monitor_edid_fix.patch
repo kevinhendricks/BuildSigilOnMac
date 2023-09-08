@@ -1,0 +1,63 @@
+From 4b119f48f5cb5e1499f91a0791150231c47430d4 Mon Sep 17 00:00:00 2001
+From: Timothée Keller <timothee.keller@qt.io>
+Date: Tue, 29 Aug 2023 07:56:41 +0000
+Subject: [PATCH] Revert "Windows QPA: Change monitor index detection"
+
+This reverts commit f4d6d04898bcc239f4b271330ba778de69bbd893.
+
+Reason for revert: EDID serial numbers can be shared across monitors, so the move to EDID serial number for screen index detection does not work as intended,and breaks monitor detection.
+
+Fixes: QTBUG-116499
+Change-Id: I6995b21788eb632e38eeef3a93492dbe0740da4a
+Reviewed-by: Oliver Wolff <oliver.wolff@qt.io>
+(cherry picked from commit 695948fad028f97521135ecb3478f2798ae6700f)
+Reviewed-by: Qt Cherry-pick Bot <cherrypick_bot@qt-project.org>
+---
+
+diff --git a/src/plugins/platforms/windows/qwindowsscreen.cpp b/src/plugins/platforms/windows/qwindowsscreen.cpp
+index 2168e00..6b85a68 100644
+--- a/src/plugins/platforms/windows/qwindowsscreen.cpp
++++ b/src/plugins/platforms/windows/qwindowsscreen.cpp
+@@ -695,19 +695,19 @@
+ }
+ 
+ static inline int indexOfMonitor(const QWindowsScreenManager::WindowsScreenList &screens,
+-                                 const QString &serialNumberIn)
++                                 const QString &deviceName)
+ {
+-    for (int i = 0; i < screens.size(); ++i)
+-        if (screens.at(i)->data().serialNumber == serialNumberIn)
++    for (int i= 0; i < screens.size(); ++i)
++        if (screens.at(i)->data().deviceName == deviceName)
+             return i;
+     return -1;
+ }
+ 
+ static inline int indexOfMonitor(const WindowsScreenDataList &screenData,
+-                                 const QString &serialNumberIn)
++                                 const QString &deviceName)
+ {
+     for (int i = 0; i < screenData.size(); ++i)
+-        if (screenData.at(i).serialNumber == serialNumberIn)
++        if (screenData.at(i).deviceName == deviceName)
+             return i;
+     return -1;
+ }
+@@ -773,7 +773,7 @@
+     const bool lockScreen = newDataList.size() == 1 && (newDataList.front().flags & QWindowsScreenData::LockScreen);
+     bool primaryScreenChanged = false;
+     for (const QWindowsScreenData &newData : newDataList) {
+-        const int existingIndex = indexOfMonitor(m_screens, newData.serialNumber);
++        const int existingIndex = indexOfMonitor(m_screens, newData.deviceName);
+         if (existingIndex != -1) {
+             m_screens.at(existingIndex)->handleChanges(newData);
+             if (existingIndex == 0)
+@@ -790,7 +790,7 @@
+     // temporary lock screen to avoid window recreation (QTBUG-33062).
+     if (!lockScreen) {
+         for (int i = m_screens.size() - 1; i >= 0; --i) {
+-            if (indexOfMonitor(newDataList, m_screens.at(i)->data().serialNumber) == -1)
++            if (indexOfMonitor(newDataList, m_screens.at(i)->data().deviceName) == -1)
+                 removeScreen(i);
+         }     // for existing screens
+     }     // not lock screen

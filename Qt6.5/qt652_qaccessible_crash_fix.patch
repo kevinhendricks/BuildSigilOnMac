@@ -1,0 +1,25 @@
+From 29b4f227c078d979139fa25c1fac627cf1662af9 Mon Sep 17 00:00:00 2001
+From: Liang Qi <liang.qi@qt.io>
+Date: Thu, 20 Jul 2023 04:26:14 +0200
+Subject: [PATCH] widgets: check pointer before usage
+
+in QAccessibleComboBox::focusChild().
+
+Fixes: QTBUG-115161
+Pick-to: 6.6 6.5 6.2
+Change-Id: I3d102cebe807da379fa4d9ee2aee1e72b8fdf004
+---
+
+diff --git a/src/widgets/accessible/complexwidgets.cpp b/src/widgets/accessible/complexwidgets.cpp
+index 1248007..6dac8fb 100644
+--- a/src/widgets/accessible/complexwidgets.cpp
++++ b/src/widgets/accessible/complexwidgets.cpp
+@@ -325,7 +325,7 @@
+     // The editable combobox is the focus proxy of its lineedit, so the
+     // lineedit itself never gets focus. But it is the accessible focus
+     // child of an editable combobox.
+-    if (comboBox()->isEditable())
++    if (comboBox() && comboBox()->isEditable())
+         return child(1);
+     return nullptr;
+ }

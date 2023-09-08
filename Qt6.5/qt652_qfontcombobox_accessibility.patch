@@ -1,0 +1,40 @@
+From abcfe57c1db784e079ea94984c9535140627d238 Mon Sep 17 00:00:00 2001
+From: Volker Hilsheimer <volker.hilsheimer@qt.io>
+Date: Wed, 06 Sep 2023 10:35:54 +0200
+Subject: [PATCH] QFontComboBox: inform accessibility about model reset when filter changes
+
+Signals are blocked explicitly, so the modelReset signal that would
+normally make the view update the accessibility framework does not work.
+Update accessibility explicitly.
+
+Pick-to: 6.5 6.6
+Fixes: QTBUG-114423
+Change-Id: Iba6f0b9dfb258e85111326184d7899bf0570a5c1
+---
+
+diff --git a/src/widgets/widgets/qfontcombobox.cpp b/src/widgets/widgets/qfontcombobox.cpp
+index 886ac64..799d70d 100644
+--- a/src/widgets/widgets/qfontcombobox.cpp
++++ b/src/widgets/widgets/qfontcombobox.cpp
+@@ -3,6 +3,7 @@
+ 
+ #include "qfontcombobox.h"
+ 
++#include <qaccessible.h>
+ #include <qstringlistmodel.h>
+ #include <qitemdelegate.h>
+ #include <qlistview.h>
+@@ -328,6 +329,13 @@
+     {
+         const QSignalBlocker blocker(m);
+         m->setStringList(list);
++        // Since the modelReset signal is blocked the view will not emit an accessibility event
++    #if QT_CONFIG(accessibility)
++        if (QAccessible::isActive()) {
++            QAccessibleTableModelChangeEvent accessibleEvent(q->view(), QAccessibleTableModelChangeEvent::ModelReset);
++            QAccessible::updateAccessibility(&accessibleEvent);
++        }
++    #endif
+     }
+ 
+     if (list.isEmpty()) {
