@@ -1,0 +1,13 @@
+diff --git qtbase/src/gui/text/windows/qwindowsfontdatabasebase.cpp qtbase/src/gui/text/windows/qwindowsfontdatabasebase.cpp
+--- qtbase/src/gui/text/windows/qwindowsfontdatabasebase.cpp
++++ qtbase/src/gui/text/windows/qwindowsfontdatabasebase.cpp
+@@ -761,6 +761,9 @@
+         return nullptr;
+ 
+     IDWriteFontFace *directWriteFontFace = createDirectWriteFace(fontData);
++    if (directWriteFontFace == nullptr)
++        return nullptr;
++
+     fontEngine = new QWindowsFontEngineDirectWrite(directWriteFontFace,
+                                                    pixelSize,
+                                                    fontEngineData);
