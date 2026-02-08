@@ -1,0 +1,12 @@
+kbhend@Mac sqlite3 % diff -u sqlite3.c~ sqlite3.c
+--- tcltk/tcl8.6.17/pkgs/sqlite3.50.4/compat/sqlite3/sqlite3.c~	2025-08-11 05:49:08
++++ tcltk/tcl8.6.17/pkgs/sqlite3.50.4/compat/sqlite3/sqlite3.c	2026-01-29 11:52:07
+@@ -31958,7 +31958,7 @@
+   for(; (c=(*fmt))!=0; ++fmt){
+     if( c!='%' ){
+       bufpt = (char *)fmt;
+-#if HAVE_STRCHRNUL
++#if 0 /* HAVE_STRCHRNUL */
+       fmt = strchrnul(fmt, '%');
+ #else
+       do{ fmt++; }while( *fmt && *fmt != '%' );
